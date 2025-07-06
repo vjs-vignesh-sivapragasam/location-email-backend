@@ -31,7 +31,9 @@ app.post('/send-location', (req, res) => {
   }
 
   const deviceName = device || 'Unknown Device';
-  const timeString = timestamp ? new Date(timestamp).toLocaleString() : new Date().toLocaleString();
+  const timeString = timestamp
+  ? new Date(timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+  : new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
   const mapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
 
   const mailOptions = {
