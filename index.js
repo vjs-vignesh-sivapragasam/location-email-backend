@@ -2,10 +2,8 @@ import express from 'express';
 import nodemailer from 'nodemailer';
 import cors from 'cors';
 
-// ========== CONFIG ==========
-// Replace with your actual Gmail and App Password
 const EMAIL_USER = 'Vigneshmake28@gmail.com';
-const EMAIL_PASS = 'wbys fqex amna galu'; // <-- Paste your Gmail App Password here
+const EMAIL_PASS = 'wbys fqex amna galu'; // Your Gmail App Password
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,7 +11,6 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// ========== Email Sender ==========
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -22,18 +19,22 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// ========== Route: POST /send-location ==========
 app.post('/send-location', (req, res) => {
-  const { lat, lon, device, timestamp } = req.body;
+  const { lat, lon, device, timestamp, battery, accuracy, address } = req.body;
 
   if (!lat || !lon) {
     return res.status(400).send('Latitude and Longitude are required');
   }
 
   const deviceName = device || 'Unknown Device';
-    const timeString = timestamp
+  const batteryLevel = battery !== undefined ? `${battery}%` : 'N/A';
+  const accuracyMeters = accuracy !== undefined ? `${accuracy} meters` : 'N/A';
+  const readableAddress = address || 'Address not available';
+
+  const timeString = timestamp
     ? new Date(timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true })
     : new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true });
+
   const mapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
 
   const mailOptions = {
@@ -44,6 +45,9 @@ app.post('/send-location', (req, res) => {
       <h2>📡 Location Update</h2>
       <p><strong>Device:</strong> ${deviceName}</p>
       <p><strong>Time:</strong> ${timeString}</p>
+      <p><strong>Battery:</strong> ${batteryLevel}</p>
+      <p><strong>Accuracy:</strong> ${accuracyMeters}</p>
+      <p><strong>Address:</strong> ${readableAddress}</p>
       <p><strong>Latitude:</strong> ${lat}</p>
       <p><strong>Longitude:</strong> ${lon}</p>
       <p><a href="${mapsUrl}" target="_blank">👉 View on Google Maps</a></p>
@@ -60,12 +64,10 @@ app.post('/send-location', (req, res) => {
   });
 });
 
-// ========== Health Check ==========
 app.get('/', (req, res) => {
   res.send('📡 Location Email Server is running');
 });
 
-// ========== Start Server ==========
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
