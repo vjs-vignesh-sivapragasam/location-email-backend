@@ -31,9 +31,11 @@ app.post('/send-location', (req, res) => {
   const accuracyMeters = accuracy !== undefined ? `${accuracy} meters` : 'N/A';
   const readableAddress = address || 'Address not available';
 
-  const timeString = timestamp
-    ? new Date(timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true })
-    : new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true });
+const time = new Date(timestamp || Date.now());
+const timeString = new Date(Number(timestamp)).toLocaleString('en-IN', {
+  timeZone: 'Asia/Kolkata',
+  hour12: true,
+});
 
   const mapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
 
