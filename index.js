@@ -25,7 +25,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // ✅ Location endpoint
-app.post('/send-location', (req, res) => {
+app.post('/send-device-location', (req, res) => {
   const { lat, lon, device, timestamp, battery, accuracy, address, key } = req.body;
 
   // 🔐 Validate key
