@@ -1,9 +1,13 @@
+import dotenv from 'dotenv';
 import express from 'express';
 import nodemailer from 'nodemailer';
 import cors from 'cors';
 
-const EMAIL_USER = 'Vigneshmake28@gmail.com';
-const EMAIL_PASS = 'wbys fqex amna galu'; // Your Gmail App Password
+dotenv.config(); // ✅ Load variables from .env
+
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
+const APP_SECRET_KEY = process.env.APP_SECRET_KEY;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,6 +15,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// ✅ Configure Gmail SMTP
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -19,8 +24,14 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// ✅ Location endpoint
 app.post('/send-location', (req, res) => {
-  const { lat, lon, device, timestamp, battery, accuracy, address } = req.body;
+  const { lat, lon, device, timestamp, battery, accuracy, address, key } = req.body;
+
+  // 🔐 Validate key
+  if (key !== APP_SECRET_KEY) {
+    return res.status(403).send('Unauthorized: Invalid API key');
+  }
 
   if (!lat || !lon) {
     return res.status(400).send('Latitude and Longitude are required');
@@ -31,11 +42,10 @@ app.post('/send-location', (req, res) => {
   const accuracyMeters = accuracy !== undefined ? `${accuracy} meters` : 'N/A';
   const readableAddress = address || 'Address not available';
 
-const time = new Date(timestamp || Date.now());
-const timeString = new Date(Number(timestamp)).toLocaleString('en-IN', {
-  timeZone: 'Asia/Kolkata',
-  hour12: true,
-});
+  const timeString = new Date(Number(timestamp || Date.now())).toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    hour12: true,
+  });
 
   const mapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
 
@@ -66,10 +76,12 @@ const timeString = new Date(Number(timestamp)).toLocaleString('en-IN', {
   });
 });
 
+// ✅ Root test route
 app.get('/', (req, res) => {
   res.send('📡 Location Email Server is running');
 });
 
+// ✅ Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
