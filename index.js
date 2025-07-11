@@ -43,7 +43,7 @@ app.post('/send-location', (req, res) => {
 
   const deviceName = device || 'Unknown Device';
   const batteryLevel = battery !== undefined ? `${battery}%` : 'N/A';
-  const accuracyMeters = accuracy !== undefined ? `${accuracy} meters` : 'N/A`;
+  const accuracyMeters = accuracy !== undefined ? `${accuracy} meters` : 'N/A';
   const readableAddress = address || 'Address not available';
 
   const timeString = new Date(Number(timestamp || Date.now())).toLocaleString('en-IN', {
