@@ -1,9 +1,12 @@
+// index.js
+
 import dotenv from 'dotenv';
 import express from 'express';
 import nodemailer from 'nodemailer';
 import cors from 'cors';
 
-dotenv.config(); // ✅ Load variables from .env
+// Load environment variables from .env file
+dotenv.config();
 
 const EMAIL_USER = process.env.EMAIL_USER;
 const EMAIL_PASS = process.env.EMAIL_PASS;
@@ -12,10 +15,11 @@ const APP_SECRET_KEY = process.env.APP_SECRET_KEY;
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// ✅ Configure Gmail SMTP
+// Setup nodemailer with Gmail SMTP
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -24,11 +28,11 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// ✅ Location endpoint
+// Location report endpoint
 app.post('/send-location', (req, res) => {
   const { lat, lon, device, timestamp, battery, accuracy, address, key } = req.body;
 
-  // 🔐 Validate key
+  // Validate secret key
   if (key !== APP_SECRET_KEY) {
     return res.status(403).send('Unauthorized: Invalid API key');
   }
@@ -39,7 +43,7 @@ app.post('/send-location', (req, res) => {
 
   const deviceName = device || 'Unknown Device';
   const batteryLevel = battery !== undefined ? `${battery}%` : 'N/A';
-  const accuracyMeters = accuracy !== undefined ? `${accuracy} meters` : 'N/A';
+  const accuracyMeters = accuracy !== undefined ? `${accuracy} meters` : 'N/A`;
   const readableAddress = address || 'Address not available';
 
   const timeString = new Date(Number(timestamp || Date.now())).toLocaleString('en-IN', {
@@ -76,12 +80,12 @@ app.post('/send-location', (req, res) => {
   });
 });
 
-// ✅ Root test route
+// Root route
 app.get('/', (req, res) => {
   res.send('📡 Location Email Server is running');
 });
 
-// ✅ Start server
+// Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
