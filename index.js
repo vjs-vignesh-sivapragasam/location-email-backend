@@ -1,147 +1,85 @@
-// index.js
-
 import dotenv from "dotenv";
 import express from "express";
-import nodemailer from "nodemailer";
 import cors from "cors";
+import { Resend } from "resend";
 
-// Load environment variables
 dotenv.config();
-
-const EMAIL_USER = process.env.EMAIL_USER;
-const EMAIL_PASS = process.env.EMAIL_PASS;
-// const APP_SECRET_KEY = process.env.APP_SECRET_KEY; // optional, disabled for now
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 app.use(cors());
 app.use(express.json());
 
-// ============================
-// SMTP CONFIG
-// ============================
-console.log("📧 Initializing mail transporter...");
-
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true, // true for 465
-  auth: {
-    user: EMAIL_USER,
-    pass: EMAIL_PASS,
-  },
-  connectionTimeout: 10_000,
-  greetingTimeout: 10_000,
-  socketTimeout: 10_000,
-});
-
-
-// Verify SMTP on startup
-// 🔍 VERIFY SMTP CONNECTION
-transporter.verify((err, success) => {
-  if (err) {
-    console.error("❌ SMTP VERIFY FAILED:", err);
-  } else {
-    console.log("✅ SMTP SERVER READY");
-  }
-});
-
-// ============================
-// LOCATION ENDPOINT
-// ============================
 app.post("/send-location", async (req, res) => {
   console.log("📥 /send-location HIT");
-  console.log("📦 RAW BODY:", req.body);
+  console.log("📦 BODY:", req.body);
 
   try {
-    // Accept frontend payload
     const {
       latitude,
       longitude,
-      deviceName,
+      accuracy,
       timestamp,
       battery,
-      accuracy,
       address,
-      // key,
+      deviceName,
     } = req.body;
 
-    // 🔐 API key check (disabled for now)
-    /*
-    if (key !== APP_SECRET_KEY) {
-      console.warn("🚫 Invalid API key");
-      return res.status(403).json({ success: false, message: "Unauthorized" });
-    }
-    */
-
     if (!latitude || !longitude) {
-      console.warn("⚠️ Missing coordinates");
       return res.status(400).json({
         success: false,
-        message: "Latitude and Longitude are required",
+        message: "Latitude & Longitude required",
       });
     }
 
-    const device = deviceName || "Unknown Device";
-    const batteryLevel = battery !== undefined ? `${battery}%` : "N/A";
-    const accuracyMeters = accuracy !== undefined ? `${accuracy} meters` : "N/A";
-    const readableAddress = address || "Address not available";
-
-    const timeString = new Date(timestamp || Date.now()).toLocaleString("en-IN", {
-      timeZone: "Asia/Kolkata",
-      hour12: true,
-    });
+    const timeString = new Date(timestamp || Date.now()).toLocaleString(
+      "en-IN",
+      { timeZone: "Asia/Kolkata" }
+    );
 
     const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
 
-    const mailOptions = {
-      from: EMAIL_USER,
-      to: EMAIL_USER,
-      subject: `📍 Location from ${device}`,
+    console.log("✉️ Sending email via Resend...");
+
+    const email = await resend.emails.send({
+      from: "Location Tracker <onboarding@resend.dev>",
+      to: ["yourmail@gmail.com"], // 👈 change to your email
+      subject: "📍 Location Update",
       html: `
         <h2>📡 Location Update</h2>
-        <p><strong>Device:</strong> ${device}</p>
-        <p><strong>Time:</strong> ${timeString}</p>
-        <p><strong>Battery:</strong> ${batteryLevel}</p>
-        <p><strong>Accuracy:</strong> ${accuracyMeters}</p>
-        <p><strong>Address:</strong> ${readableAddress}</p>
-        <p><strong>Latitude:</strong> ${latitude}</p>
-        <p><strong>Longitude:</strong> ${longitude}</p>
-        <p><a href="${mapsUrl}" target="_blank">👉 View on Google Maps</a></p>
+        <p><b>Time:</b> ${timeString}</p>
+        <p><b>Latitude:</b> ${latitude}</p>
+        <p><b>Longitude:</b> ${longitude}</p>
+        <p><b>Accuracy:</b> ${accuracy ?? "N/A"} meters</p>
+        <p><b>Battery:</b> ${battery ?? "N/A"}%</p>
+        <p><b>Address:</b> ${address ?? "N/A"}</p>
+        <p><a href="${mapsUrl}">👉 View on Google Maps</a></p>
       `,
-    };
+    });
 
-    console.log("✉️ Sending email...");
-    const info = await transporter.sendMail(mailOptions);
-
-    console.log("✅ EMAIL SENT:", info.response);
+    console.log("✅ EMAIL SENT:", email.id);
 
     res.json({
       success: true,
       message: "Email sent successfully",
     });
-  } catch (error) {
-    console.error("❌ EMAIL SEND ERROR:", error);
+  } catch (err) {
+    console.error("❌ EMAIL ERROR:", err);
 
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: err.message,
     });
   }
 });
 
-// ============================
-// HEALTH CHECK
-// ============================
 app.get("/", (req, res) => {
-  res.send("📡 Location Email Server is running");
+  res.send("📡 Location Email Server running on Render");
 });
 
-// ============================
-// START SERVER
-// ============================
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
